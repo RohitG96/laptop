@@ -1,0 +1,220 @@
+#!/usr/bin/env bash
+trap 'ret=$?; test $ret -ne 0 && printf "failed\n\n" >&2; exit $ret' EXIT
+set -e
+
+fancy_echo() {
+  printf "\n%b\n" "$1"
+}
+
+brew_uninstall() {
+  if brew_is_installed "$1"; then
+    brew uninstall "$1"
+  fi
+}
+
+
+brew_install_or_upgrade() {
+  if brew_is_installed "$1"; then
+    if brew_is_upgradable "$1"; then
+      brew upgrade "$@"
+    fi
+  else
+    brew install "$@"
+  fi
+}
+
+brew_is_installed() {
+  local NAME=$(brew_expand_alias "$1")
+
+  brew list -1 | grep -Fqx "$NAME"
+}
+
+brew_is_upgradable() {
+  local NAME=$(brew_expand_alias "$1")
+
+  brew outdated --quiet "$NAME" >/dev/null
+  [[ $? -ne 0 ]]
+}
+
+brew_expand_alias() {
+  brew info "$1" 2>/dev/null | head -1 | awk '{gsub(/:/, ""); print $1}'
+}
+
+brew_launchctl_restart() {
+  local NAME=$(brew_expand_alias "$1")
+  local DOMAIN="homebrew.mxcl.$NAME"
+  local PLIST="$DOMAIN.plist"
+
+  mkdir -p ~/Library/LaunchAgents
+  ln -sfv /usr/local/opt/$NAME/$PLIST ~/Library/LaunchAgents
+
+  if launchctl list | grep -q $DOMAIN; then
+    launchctl unload ~/Library/LaunchAgents/$PLIST >/dev/null
+  fi
+  launchctl load ~/Library/LaunchAgents/$PLIST >/dev/null
+}
+
+
+brew_cask_install_or_upgrade() {
+  if brew_cask_is_installed "$1"; then
+    if brew_cask_is_upgradable "$1"; then
+      brew cask install "$@" 2> /dev/null
+    fi
+  else
+    brew cask install "$@"
+  fi
+}
+
+brew_cask_is_installed() {
+  local NAME=$(brew_cask_expand_alias "$1")
+
+  brew cask list -1 | grep -Fqx "$NAME"
+}
+
+brew_cask_is_upgradable() {
+  [ "true" != "false" ]
+}
+
+brew_cask_expand_alias() {
+  brew cask info "$1" 2>/dev/null | head -1 | awk '{gsub(/:/, ""); print $1}'
+}
+
+npm_install_or_upgrade() {
+  if npm list -g --depth=0 | grep "$1"; then
+    npm update "$1" -g
+  else
+    npm install "$1" -g
+  fi
+}
+
+fancy_echo "Starting the update..."
+  cd ~/
+  if [ -d ~/.bin/.git ]; then
+    cd ~/.bin
+    git pull
+    cd ~/
+  else
+    rm -rf ~/.bin
+    ssh-agent bash -c 'cd ~/; ssh-add ~/.ssh/github;  git clone git@github.com:anshul/laptop.git .bin'
+  fi
+
+fancy_echo "Updating Homebrew formulas ..."
+  hourstamp=$( date "+%Y-%m-%d_%H.th.hour")
+  if [[ -f "/tmp/brew.update.$hourstamp" ]]; then
+    fancy_echo "Skipping brew update as the command was last run in this hour..."
+  else
+    brew update
+    if ! brew tap | grep 'thoughtbot/formulae'; then
+      brew tap thoughtbot/formulae
+    fi
+    if ! brew tap | grep 'caskroom/cask'; then
+      brew tap caskroom/cask
+    fi
+
+    rm -f /tmp/brew.update.*
+    touch "/tmp/brew.update.$hourstamp"
+  fi
+
+
+
+if [[ -f ~/.bin.local/laptop-hook-pre-update ]]; then
+  fancy_echo "Running pre update hook"
+  source ~/.bin.local/laptop-hook-pre-update
+fi
+
+fancy_echo "Installing ohmyzsh"
+  if [[ -d ~/.oh-my-zsh ]]; then
+    fancy_echo "Oh my zsh is already installed. Skipping ..."
+  else
+    brew_install_or_upgrade wget
+    mkdir -p "/tmp/""$USERNAME""/laptop"
+    (wget https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh -O -) > "/tmp/""$USERNAME""/laptop/ohmyz"
+    (source "/tmp/""$USERNAME""/laptop/ohmyz") || echo "Some error installing ohmyzsh"
+  fi
+
+fancy_echo "Installing macvim"
+  brew_uninstall vim
+  brew_install_or_upgrade macvim --with-cscope --with-lua
+  ln -sfv /usr/local/bin/mvim /usr/local/bin/vim
+  ln -sfv /usr/local/bin/mvim /usr/local/bin/vi
+
+fancy_echo "Updating dotfiles"
+  mkdir -p ~/.bin.local/dotfiles
+  rcup -v -d "$HOME/.bin.local/dotfiles" -d "$HOME/.dotfiles" -d "$HOME/.bin/dotfiles"
+  mkdir -p "$HOME/.vim/tmp/backup" "$HOME/.vim/tmp/swap" "$HOME/.vim/tmp/undo"
+  touch "$HOME/.vimrc.local" "$HOME/.zshrc.local" "$HOME/.bashrc.local"
+
+fancy_echo "Running vim-plug"
+  if [[ -f ~/.vim/autoload/plug.vim ]]; then
+    echo "vim-plug already exists."
+  else
+    curl -fLo ~/.vim/autoload/plug.vim --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+  fi
+vim +PlugInstall +qall
+
+for package in xquartz java cmake osxfuse; do
+  fancy_echo "Installing $package"
+  brew_cask_install_or_upgrade "$package"
+done
+
+
+for package in gpg autojump ack base64 bash bash-completion coreutils darkhttpd ec2-api-tools findutils gcc git gnu-sed gnuplot gsl iftop imagemagick phantomjs rename rust s3cmd sqlite sshfs task tree unrar watch webkit2png wget xz youtube-dl graphicsmagick poppler tesseract postgis ; do
+  fancy_echo "Installing $package"
+  brew_install_or_upgrade "$package"
+done
+
+
+for package in mongodb memcached redis ; do
+  fancy_echo "Installing $package"
+  brew_install_or_upgrade "$package"
+  fancy_echo "Restarting $package"
+  brew_launchctl_restart "$package"
+done
+
+fancy_echo "Uninstalling unknown global gems"
+  if !(which rvm); then
+    fancy_echo "Leaving them as is as you are using rvm"
+  else
+    gem list |  cut -d" " -f1 | egrep -v  '(awesome_print|bigdecimal|bundler|coderay|hpricot|html2slim|io-console|json|method_source|minitest|multi_json|parity|pry|pry-doc|psych|rake|rdoc|slim|slop|temple|test-unit|tilt|yard)' | xargs gem uninstall -aIx
+  fi
+
+fancy_echo "Updating gem command"
+daystamp=$( date "+%Y-%m-%d")
+  if [[ -f "/tmp/gem.update.$daystamp" ]]; then
+    fancy_echo "Skipping gem update --system as it was last run today..."
+  else
+    gem update --system
+    gem cleanup
+    rm -f /tmp/gem.update.*
+    touch "/tmp/gem.update.$daystamp"
+  fi
+
+fancy_echo "Updating global gems"
+  gem update bundler pry pry-doc awesome_print slim html2slim parity --no-document || gem install bundler pry pry-doc awesome_print slim html2slim parity --no-document
+  gem cleanup
+
+
+for package in typescript rnpm nativescript react-native-cli create-react-app syntastic-react eslint cordova diff-so-fancy; do
+  fancy_echo "Installing $package"
+  echo "Skipping $package for now"
+done
+
+for package in iterm2 firefox google-chrome slack dropbox genymotion vlc google-hangouts telegram yujitach-menumeters bitbar gpgtools; do
+  fancy_echo "Installing $package"
+  brew_cask_install_or_upgrade "$package"
+done
+ln -sfv "$HOME/Applications/Firefox.app" "/Applications/Firefox.app"
+
+fancy_echo "Cleaning up brew downloads"
+  brew cleanup
+  brew cleanup -s
+  brew cask cleanup
+
+
+if [[ -f ~/.bin.local/laptop-hook-post-update ]]; then
+  fancy_echo "Running post update hook"
+  source ~/.bin.local/laptop-hook-post-update
+fi
+
+say "Update finished."
+echo "Update finished.  You are good to go.  You might need to reboot now."

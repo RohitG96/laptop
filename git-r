@@ -1,0 +1,13 @@
+#!/bin/bash
+git checkout master
+git branch --merged | grep -v \* | xargs git branch -D
+git sync
+git pl
+if [ "x$@" == "x" ]; then
+  echo "Give a branch to review:  git r remote_branch_name"
+else
+  git checkout "$@"
+fi
+git pl
+git diff --name-status master  | egrep '^[AM]' | sed -e 's/^[AM]//g'
+cd $(git rev-parse --show-cdup)

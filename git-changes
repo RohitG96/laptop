@@ -1,0 +1,2 @@
+#!/bin/bash
+git diff --name-status master  | egrep '^[AM]' | sed -e 's/^[AM]//g'

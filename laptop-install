@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+trap 'ret=$?; test $ret -ne 0 && printf "failed\n\n" >&2; exit $ret' EXIT
+set -e
+
+fancy_echo() {
+  printf "\n%b\n" "$1"
+}
+
+set -x
+rm -rf ~/.bin
+ssh-agent bash -c 'cd ~/; ssh-add ~/.ssh/github;  git clone git@github.com:anshul/laptop.git .bin'
+fancy_echo "---------------------------------------------------------shjdjebjhbjhbhhgevshbajgduygkjn"
+mkdir -p "/tmp/""$USERNAME"
+curl -s https://raw.githubusercontent.com/RohitG96/ubuntu_desktop/master/ubuntu | egrep -v 'suspenders' | egrep -v 'fancy_echo "Installing vim' | egrep -v 'upgrade.*vim'  > "/tmp/""$USERNAME""/thoughtbot"
+fancy_echo "-_----__----_---_-_-------_____________-___shjdjebjhbjhbhhgevshbajgduygkjn__________________"
+source "/tmp/""$USERNAME""/thoughtbot"
+source  ~/.bin/laptop-update
+# source  ~/.bin/laptop-apply-ubuntu-fixes
+
+echo "All done!  Please reboot."
+say "All done!  Please reboot."
+
