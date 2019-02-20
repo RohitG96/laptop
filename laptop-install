@@ -9,10 +9,8 @@ fancy_echo() {
 set -x
 rm -rf ~/.bin
 ssh-agent bash -c 'cd ~/; ssh-add ~/.ssh/github;  git clone git@github.com:RohitG96/laptop.git .bin'
-fancy_echo "---------------------------------------------------------shjdjebjhbjhbhhgevshbajgduygkjn"
 mkdir -p "/tmp/""$USERNAME"
 curl -s https://raw.githubusercontent.com/RohitG96/ubuntu_desktop/master/ubuntu | egrep -v 'suspenders' | egrep -v 'fancy_echo "Installing vim' | egrep -v 'upgrade.*vim'  > "/tmp/""$USERNAME""/thoughtbot"
-fancy_echo "-_----__----_---_-_-------_____________-___shjdjebjhbjhbhhgevshbajgduygkjn__________________"
 source "/tmp/""$USERNAME""/thoughtbot"
 source  ~/.bin/laptop-update
 # source  ~/.bin/laptop-apply-ubuntu-fixes

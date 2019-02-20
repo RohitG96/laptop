@@ -54,31 +54,6 @@ brew_launchctl_restart() {
   launchctl load ~/Library/LaunchAgents/$PLIST >/dev/null
 }
 
-
-brew_cask_install_or_upgrade() {
-  if brew_cask_is_installed "$1"; then
-    if brew_cask_is_upgradable "$1"; then
-      brew cask install "$@" 2> /dev/null
-    fi
-  else
-    brew cask install "$@"
-  fi
-}
-
-brew_cask_is_installed() {
-  local NAME=$(brew_cask_expand_alias "$1")
-
-  brew cask list -1 | grep -Fqx "$NAME"
-}
-
-brew_cask_is_upgradable() {
-  [ "true" != "false" ]
-}
-
-brew_cask_expand_alias() {
-  brew cask info "$1" 2>/dev/null | head -1 | awk '{gsub(/:/, ""); print $1}'
-}
-
 npm_install_or_upgrade() {
   if npm list -g --depth=0 | grep "$1"; then
     npm update "$1" -g
@@ -107,10 +82,6 @@ fancy_echo "Updating Homebrew formulas ..."
     if ! brew tap | grep 'thoughtbot/formulae'; then
       brew tap thoughtbot/formulae
     fi
-    if ! brew tap | grep 'caskroom/cask'; then
-      brew tap caskroom/cask
-    fi
-
     rm -f /tmp/brew.update.*
     touch "/tmp/brew.update.$hourstamp"
   fi
@@ -151,11 +122,6 @@ fancy_echo "Running vim-plug"
     curl -fLo ~/.vim/autoload/plug.vim --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
   fi
 vim +PlugInstall +qall
-
-for package in xquartz java cmake osxfuse; do
-  fancy_echo "Installing $package"
-  brew_cask_install_or_upgrade "$package"
-done
 
 
 for package in gpg autojump ack base64 bash bash-completion coreutils darkhttpd ec2-api-tools findutils gcc git gnu-sed gnuplot gsl iftop imagemagick phantomjs rename rust s3cmd sqlite sshfs task tree unrar watch webkit2png wget xz youtube-dl graphicsmagick poppler tesseract postgis ; do
@@ -201,14 +167,12 @@ done
 
 for package in iterm2 firefox google-chrome slack dropbox genymotion vlc google-hangouts telegram yujitach-menumeters bitbar gpgtools; do
   fancy_echo "Installing $package"
-  brew_cask_install_or_upgrade "$package"
 done
 ln -sfv "$HOME/Applications/Firefox.app" "/Applications/Firefox.app"
 
 fancy_echo "Cleaning up brew downloads"
   brew cleanup
   brew cleanup -s
-  brew cask cleanup
 
 
 if [[ -f ~/.bin.local/laptop-hook-post-update ]]; then
