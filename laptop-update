@@ -82,8 +82,8 @@ fancy_echo "Updating Homebrew formulas ..."
     if ! brew tap | grep 'thoughtbot/formulae'; then
       brew tap thoughtbot/formulae
     fi
-    rm -f /tmp/brew.update.*
-    touch "/tmp/brew.update.$hourstamp"
+    # rm -f "/tmp/brew.update.*"
+    # touch "/tmp/brew.update.$hourstamp"
   fi
 
 
