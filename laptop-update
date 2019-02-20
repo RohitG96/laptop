@@ -103,11 +103,11 @@ fancy_echo "Installing ohmyzsh"
     (source "/tmp/""$USERNAME""/laptop/ohmyz") || echo "Some error installing ohmyzsh"
   fi
 
-fancy_echo "Installing macvim"
+fancy_echo "Installing vim"
   brew_uninstall vim
   brew_install_or_upgrade vim
-  ln -sfv /usr/local/bin/mvim /usr/local/bin/vim
-  ln -sfv /usr/local/bin/mvim /usr/local/bin/vi
+  sudo ln -sfv /usr/local/bin/mvim /usr/local/bin/vim
+  sudo ln -sfv /usr/local/bin/mvim /usr/local/bin/vi
 
 fancy_echo "Updating dotfiles"
   mkdir -p ~/.bin.local/dotfiles
