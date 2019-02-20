@@ -105,7 +105,7 @@ fancy_echo "Installing ohmyzsh"
 
 fancy_echo "Installing macvim"
   brew_uninstall vim
-  brew_install_or_upgrade macvim --with-cscope --with-lua
+  brew_install_or_upgrade macvim
   ln -sfv /usr/local/bin/mvim /usr/local/bin/vim
   ln -sfv /usr/local/bin/mvim /usr/local/bin/vi
 
