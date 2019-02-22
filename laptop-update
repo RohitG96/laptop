@@ -124,7 +124,7 @@ fancy_echo "Running vim-plug"
 vim +PlugInstall +qall
 
 
-for package in gpg autojump ack base64 bash bash-completion coreutils darkhttpd ec2-api-tools findutils gcc git gnu-sed gsl iftop imagemagick phantomjs rename rust s3cmd sqlite sshfs task tree unrar watch webkit2png wget xz youtube-dl graphicsmagick poppler tesseract postgis ; do
+for package in gpg autojump ack base64 bash bash-completion coreutils darkhttpd ec2-api-tools findutils gcc git gnu-sed gsl imagemagick phantomjs rename rust s3cmd sqlite sshfs task tree unrar watch webkit2png wget xz youtube-dl graphicsmagick poppler tesseract postgis ; do
   fancy_echo "Installing $package"
   brew_install_or_upgrade "$package"
 done
